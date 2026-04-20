@@ -2,6 +2,8 @@ use std::sync::{Arc, Mutex};
 use std::fs;
 use tauri::Manager;
 
+mod keyboard_hook;
+
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
 struct Shortcut {
     id: String,
@@ -72,7 +74,8 @@ pub fn run() {
             let state = Arc::new(AppState {
                 shortcuts: Mutex::new(shortcuts),
             });
-            app.manage(state);
+            app.manage(state.clone());
+            crate::keyboard_hook::start_keyboard_hook(state);
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

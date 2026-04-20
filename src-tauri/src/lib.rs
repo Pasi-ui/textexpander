@@ -15,7 +15,11 @@ struct AppState {
 fn add_shortcut(state: tauri::State<Arc<AppState>>, trigger: String, expansion: String) -> String {
     let mut shortcuts = state.shortcuts.lock().unwrap();
     let id = format!("{}", shortcuts.len() + 1);
-    shortcuts.push(Shortcut { id: id.clone(), trigger, expansion });
+    shortcuts.push(Shortcut {
+        id: id.clone(),
+        trigger,
+        expansion,
+    });
     id
 }
 
@@ -34,15 +38,28 @@ fn delete_shortcut(state: tauri::State<Arc<AppState>>, id: String) {
 pub fn run() {
     let state = Arc::new(AppState {
         shortcuts: Mutex::new(vec![
-            Shortcut { id: "1".into(), trigger: "mfg".into(), expansion: "Mit freundlichen Grüßen".into() },
-            Shortcut { id: "2".into(), trigger: "lg".into(), expansion: "Liebe Grüße".into() },
+            Shortcut {
+                id: "1".into(),
+                trigger: "mfg".into(),
+                expansion: "Mit freundlichen Grüßen".into(),
+            },
+            Shortcut {
+                id: "2".into(),
+                trigger: "lg".into(),
+                expansion: "Liebe Grüße".into(),
+            },
         ]),
     });
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init())
         .manage(state)
-        .invoke_handler(tauri::generate_handler![add_shortcut, get_shortcuts, delete_shortcut])
+        .invoke_handler(tauri::generate_handler![
+            add_shortcut,
+            get_shortcuts,
+            delete_shortcut
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

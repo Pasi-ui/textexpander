@@ -1,51 +1,58 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
+import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 
-function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
-
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
-
-  return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
-
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
-  );
+interface Shortcut {
+  id: string;
+  trigger: string;
+  expansion: string;
 }
 
-export default App;
+function App() {
+  const [shortcuts, setShortcuts] = useState<Shortcut[]>([]);
+  const [trigger, setTrigger] = useState("");
+  const [expansion, setExpansion] = useState("");
+
+  async function loadShortcuts() {
+    const result = await invoke<Shortcut[]>("get_shortcuts");
+    setShortcuts(result);
+  }
+
+  async function addShortcut() {
+    if (!trigger || !expansion) return;
+    await invoke("add_shortcut", { trigger, expansion });
+    setTrigger("");
+    setExpansion("");
+    loadShortcuts();
+  }
+
+  async function deleteShortcut(id: string) {
+    await invoke("delete_shortcut", { id });
+    loadShortcuts();
+  }
+
+  useEffect(() => { loadShortcuts(); }, []);
+
+  return (
+    <main style={{ padding: "24px", fontFamily: "system-ui", maxWidth: "600px", margin: "0 auto" }}>
+      <h1 style={{ fontSize: "24px", marginBottom: "24px" }}>⌨️ TextExpander</h1>
+
+      <div style={{ background: "#1a1a1a", borderRadius: "8px", padding: "20px", marginBottom: "24px" }}>
+        <h2 style={{ fontSize: "14px", marginBottom: "16px", color: "#888" }}>NEUES KÜRZEL</h2>
+        <input
+          value={trigger}
+          onChange={e => setTrigger(e.target.value)}
+          placeholder="Kürzel (z.B. mfg)"
+          style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #333", background: "#111", color: "#fff", marginBottom: "10px", boxSizing: "border-box" }}
+        />
+        <textarea
+          value={expansion}
+          onChange={e => setExpansion(e.target.value)}
+          placeholder="Expansion (z.B. Mit freundlichen Grüßen)"
+          rows={3}
+          style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #333", background: "#111", color: "#fff", marginBottom: "10px", boxSizing: "border-box", resize: "vertical" }}
+        />
+        <button
+          onClick={addShortcut}
+          style={{ background: "#6ee7b7", color: "#000", border: "none", padding: "10px 20px", borderRadius: "6px", cursor: "pointer", fontWeight: "600", width: "100%" }}
+          

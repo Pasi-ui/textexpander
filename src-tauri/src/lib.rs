@@ -76,6 +76,26 @@ pub fn run() {
             });
             app.manage(state.clone());
             crate::keyboard_hook::start_keyboard_hook(state);
+
+            // Launch Swift keyboard helper
+            let shortcuts_file = get_shortcuts_file_path(app.handle());
+            let swift_script = app.path().resource_dir()
+                .unwrap()
+                .join("src-tauri")
+                .join("keyboard_helper.swift");
+
+            if swift_script.exists() {
+                let _ = Command::new("swift")
+                    .arg(swift_script)
+                    .arg(shortcuts_file)
+                    .spawn()
+                    .map_err(|e| {
+                        eprintln!("Failed to launch Swift keyboard helper: {}", e);
+                    });
+            } else {
+                eprintln!("Swift script not found at: {:?}", swift_script);
+            }
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
